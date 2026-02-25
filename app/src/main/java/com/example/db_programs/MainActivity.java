@@ -3,18 +3,12 @@ package com.example.db_programs;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import android.database.sqlite.SQLiteDatabase;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -24,69 +18,85 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
         tableLayout = findViewById(R.id.tableLayout);
 
-        /* MyDatabaseHelper dbHelper = new MyDatabaseHelper(this);
-            SQLiteDatabase db = dbHelper.getWritableDatabase(); */
-
-        //fetching record from database....
-        displayDate();
-
-        //intentviews
         register_button = findViewById(R.id.register);
-        register_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent= new Intent(MainActivity.this, add_record.class);
-                startActivity(intent);
-
-
-            }
+        register_button.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, add_record.class);
+            startActivity(intent);
         });
 
-
-
-
+        displayDate();
     }
 
-    public void displayDate(){
+    @Override
+    protected void onResume() {
+        super.onResume();
+        displayDate();
+    }
+
+    public void displayDate() {
+
+        tableLayout.removeAllViews();
+
         MyDatabaseHelper dbHelper = new MyDatabaseHelper(this);
-        //SQLiteDatabase db = dbHelper.getWritableDatabase();
         Cursor cursor = dbHelper.getAllData();
 
-            // Table Header
-            TableRow headerRow = new TableRow(this);
-            headerRow.addView(createTextView("ID"));
-            headerRow.addView(createTextView("Name"));
-            headerRow.addView(createTextView("Email"));
-            tableLayout.addView(headerRow);
+        // Header
+        TableRow headerRow = new TableRow(this);
+        headerRow.addView(createTextView("ID"));
+        headerRow.addView(createTextView("Name"));
+        headerRow.addView(createTextView("Email"));
+        headerRow.addView(createTextView("Edit"));
+        headerRow.addView(createTextView("Delete"));
+        tableLayout.addView(headerRow);
 
+        while (cursor.moveToNext()) {
 
-            // Table Data
-            while (cursor.moveToNext()) {
-                TableRow row = new TableRow(this);
+            String id = cursor.getString(0);
+            String name = cursor.getString(1);
+            String email = cursor.getString(2);
 
-                row.addView(createTextView(cursor.getString(0)));
-                row.addView(createTextView(cursor.getString(1)));
-                row.addView(createTextView(cursor.getString(2)));
+            TableRow row = new TableRow(this);
 
-                tableLayout.addView(row);
-            }
+            row.addView(createTextView(id));
+            row.addView(createTextView(name));
+            row.addView(createTextView(email));
 
-            cursor.close();
+            // EDIT
+            Button editBtn = new Button(this);
+            editBtn.setText("Edit");
+            editBtn.setOnClickListener(v -> {
+                Intent intent = new Intent(MainActivity.this, add_record.class);
+                intent.putExtra("id", id);
+                intent.putExtra("name", name);
+                intent.putExtra("email", email);
+                startActivity(intent);
+            });
+            row.addView(editBtn);
+
+            // DELETE
+            Button deleteBtn = new Button(this);
+            deleteBtn.setText("Delete");
+            deleteBtn.setOnClickListener(v -> {
+                dbHelper.deleteData(id);
+                displayDate();
+            });
+            row.addView(deleteBtn);
+
+            tableLayout.addView(row);
         }
 
-        private TextView createTextView(String text) {
-            TextView tv = new TextView(this);
-            tv.setText(text);
-            tv.setPadding(20, 20, 20, 20);
-            tv.setTextSize(16);
-            return tv;
-        }
+        cursor.close();
+    }
 
-
-
+    private TextView createTextView(String text) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setPadding(20, 20, 20, 20);
+        tv.setTextSize(16);
+        return tv;
+    }
 }
